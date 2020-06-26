@@ -48,7 +48,12 @@ class Filter
 
         $where = [];
         foreach ($params as $field => $expr) {
-            if (empty($bean->field_defs[$field])) {
+            $tableName = "";
+            if ($bean->field_name_map[$field] != NULL)
+            {
+              if ($bean->field_name_map[$field]["source"] == "custom_fields") $tableName = $bean->getTableName() . "_cstm";
+              else $tableName = $bean->getTableName();
+            } else {
                 throw new \InvalidArgumentException(sprintf(
                     'Filter field %s in %s module is not found',
                     $field,

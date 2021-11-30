@@ -147,7 +147,7 @@ class SugarAuthenticate
     public function postLoginAuthenticate()
     {
         global $reset_language_on_default_user, $sugar_config;
-        
+
         //just do a little house cleaning here
         unset($_SESSION['login_password']);
         unset($_SESSION['login_error']);
@@ -419,7 +419,7 @@ class SugarAuthenticate
         }
 
         if ($redirect === true) {
-            header('Location: index.php?module=Users&action=Login');
+            header('Location: legacy/index.php?module=Users&action=Login');
         }
 
         sugar_cleanup($exit);

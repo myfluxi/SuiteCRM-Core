@@ -82,9 +82,11 @@ class ExtensionAssetCacheWarmupDecorator extends CacheWarmerAggregate
     /**
      * @inheritDoc
      */
-    public function warmUp(string $cacheDir)
+    public function warmUp(string $cacheDir): array
     {
-        $this->decorated->warmUp($cacheDir);
+        $return = $this->decorated->warmUp($cacheDir);
         $this->assetCopy->copyAssets();
+
+        return (array) $return;
     }
 }

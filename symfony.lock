@@ -698,6 +698,9 @@
     "symfony/options-resolver": {
         "version": "v4.4.4"
     },
+    "symfony/password-hasher": {
+        "version": "v5.4.0"
+    },
     "symfony/polyfill-ctype": {
         "version": "v1.13.1"
     },

@@ -49,13 +49,11 @@ class InstallExtensionAssets extends Command
 
     /**
      * InstallExtensionAssets constructor.
-     * @param string|null $name
-     * @param ExtensionAssetCopyInterface $copy
      */
-    public function __construct(string $name = null, ExtensionAssetCopyInterface $copy)
+    public function __construct(?string $name = null, ?ExtensionAssetCopyInterface $copy = null)
     {
         parent::__construct($name);
-        $this->copy = $copy;
+        $this->copy = $copy ?? new ExtensionAssetCopy('/public');
     }
 
     /**

@@ -12,7 +12,7 @@ yarn run build-dev:shell
 
 composer dumpautoload
 
-chmod +x ./bin/console
+chmod +x bin/console
 bin/console suitecrm:app:install
 
 # Permissions

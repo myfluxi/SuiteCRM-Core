@@ -40,18 +40,18 @@
 
 require_once('modules/ModuleBuilder/MB/AjaxCompose.php');
 require_once('modules/ModuleBuilder/views/view.modulefield.php');
- 
+
 class ViewModulefields extends SugarView
 {
     public $mbModule;
-    
+
     /**
      * @see SugarView::_getModuleTitleParams()
      */
     protected function _getModuleTitleParams($browserTitle = false)
     {
         global $mod_strings;
-        
+
         return array(
            translate('LBL_MODULE_NAME', 'Administration'),
            ModuleBuilderController::getModuleTitle(),
@@ -106,7 +106,11 @@ class ViewModulefields extends SugarView
                     $customFieldsData[$def['name']] = $def['custom'];
                 }
             }
-            $studioClass->mbvardefs->vardefs['fields'] = $f;
+
+            if (property_exists($studioClass, 'mbvardefs')) {
+                $studioClass->mbvardefs->vardefs['fields'] = $f;
+            }
+
             $smarty->assign('module', $studioClass);
 
             $package = new stdClass;
@@ -234,7 +238,7 @@ class ViewModulefields extends SugarView
         }
         return $def;
     }
-    
+
     public function isValidStudioField(
         $def
         ) {
@@ -260,7 +264,7 @@ class ViewModulefields extends SugarView
                 return true;
             }
         }
-        
+
         return false;
     }
 }

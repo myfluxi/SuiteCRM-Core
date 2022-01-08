@@ -52,6 +52,8 @@ class ClientRepository implements ClientRepositoryInterface
      */
     public function getClientEntity($clientIdentifier, $grantType, $clientSecret = null, $mustValidateSecret = true)
     {
+        // TODO: Cleanup or remove.
+
         $client = new \OAuth2Clients();
         $client->retrieve($clientIdentifier);
         if (empty($client->id)) {
@@ -78,5 +80,10 @@ class ClientRepository implements ClientRepositoryInterface
         $clientEntity->setRedirectUri($redirect_url);
 
         return $clientEntity;
+    }
+
+    public function validateClient($clientIdentifier, $clientSecret, $grantType)
+    {
+        // TODO: Implement validateClient() method.
     }
 }

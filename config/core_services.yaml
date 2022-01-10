@@ -133,11 +133,8 @@ services:
   App\Engine\Service\Extensions\ExtensionAssetCacheWarmupDecorator:
     decorates: 'cache_warmer'
 
-  App\Security\LegacySessionLogoutHandler:
-    tags:
-      - name: 'kernel.event_listener'
-        event: 'Symfony\Component\Security\Http\Event\LogoutEvent'
-        dispatcher: security.event_dispatcher.main
+  App\Security\LegacySessionLogoutListener:
+    tags: [ { name: kernel.event_listener, event: Symfony\Component\Security\Http\Event\LogoutEvent, method: onLogout } ]
 
   App\Security\RouteMatcher:
     class: App\Security\RouteMatcher

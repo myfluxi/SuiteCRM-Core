@@ -419,7 +419,7 @@ class SugarAuthenticate
         }
 
         if ($redirect === true) {
-            header('Location: legacy/index.php?module=Users&action=Login');
+            header('Location: index.php?module=Users&action=Login');
         }
 
         sugar_cleanup($exit);

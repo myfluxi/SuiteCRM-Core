@@ -171,7 +171,7 @@ class Authentication extends LegacyHandler
 
         $authController = $this->getAuthenticationController();
 
-        $authController->logout(true, false, false);
+        $authController->logout(false, false, false);
 
         $this->close();
     }

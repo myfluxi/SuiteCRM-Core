@@ -185,6 +185,9 @@ class AuthenticationController
                 header("Location: index.php?module=Users&action=Wizard");
                 sugar_cleanup(true);
             }
+
+            // Flag is used in LogoutListener to avoid invalidation of session during login
+            $_SESSION['loginInProcess'] = true;
         } else {
             //kbrill bug #13225
             LogicHook::initialize();
@@ -203,7 +206,7 @@ class AuthenticationController
      * This is called on every page hit.
      * It returns true if the current session is authenticated or false otherwise
      *
-     * @return booelan
+     * @return bool
      */
     public function sessionAuthenticate()
     {

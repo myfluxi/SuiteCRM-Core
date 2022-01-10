@@ -31,36 +31,21 @@ use App\Authentication\LegacyHandler\Authentication;
 use Symfony\Component\Security\Http\Event\LogoutEvent;
 
 /**
- * Class LegacySessionLogoutHandler
  * @package App\Security
  */
-class LegacySessionLogoutHandler
+class LegacySessionLogoutListener
 {
-    /**
-     * @var Authentication
-     */
-    protected $authentication;
-    /**
-     * @var SessionLogoutHandler
-     */
-    private $decorated;
+    protected Authentication $authentication;
 
-    /**
-     * LegacySessionLogoutHandler constructor.
-     * @param Authentication $authentication
-     */
-    public function __construct(
-        Authentication $authentication
-    ) {
+    public function __construct(Authentication $authentication) {
         $this->authentication = $authentication;
     }
 
-    /**
-     * @param LogoutEvent $logoutEvent
-     */
-    public function onSymfonyComponentSecurityHttpEventLogoutEvent(LogoutEvent $logoutEvent): void
+    public function onLogout(LogoutEvent $event): void
     {
-        $this->authentication->logout();
-        $logoutEvent->getRequest()->getSession()->invalidate();
+        if ($event->getRequest()->hasSession() && $event->getRequest()->getSession()->remove('loginInProcess')) {
+            $event->getRequest()->getSession()->invalidate();
+            $this->authentication->logout();
+        }
     }
 }

@@ -28,7 +28,7 @@
 
 namespace App\Tests\unit\core\src\Security;
 
-use App\Security\LegacySessionLogoutHandler;
+use App\Security\LegacySessionLogoutListener;
 use App\Tests\UnitTester;
 use AspectMock\Test;
 use AuthenticationController;
@@ -54,7 +54,7 @@ class LegacySessionLogoutHandlerTest extends Unit
     protected $tester;
 
     /**
-     * @var LegacySessionLogoutHandler
+     * @var LegacySessionLogoutListener
      */
     protected $handler;
 

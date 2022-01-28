@@ -107,10 +107,6 @@ class ViewModulefields extends SugarView
                 }
             }
 
-            if (property_exists($studioClass, 'mbvardefs')) {
-                $studioClass->mbvardefs->vardefs['fields'] = $f;
-            }
-
             $smarty->assign('module', $studioClass);
 
             $package = new stdClass;

@@ -33,6 +33,7 @@
     "ext-json": "*",
     "ext-openssl": "*",
     "ext-pdo": "*",
+    "ext-xhprof": "*",
     "ext-zip": "*",
     "api-platform/core": "^2.6",
     "composer/package-versions-deprecated": "1.11.99.3",

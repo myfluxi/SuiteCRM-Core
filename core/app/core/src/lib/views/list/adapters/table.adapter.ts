@@ -68,6 +68,7 @@ export class TableAdapter {
             selection$: this.store.selection$,
             sort$: this.store.sort$,
             maxColumns$: of(4),
+            loading$: this.store.recordList.loading$,
 
             dataSource: this.store.recordList,
             selection: this.store.recordList,
@@ -80,7 +81,7 @@ export class TableAdapter {
 
             updateSorting: (orderBy: string, sortOrder: SortDirection): void => {
                 this.store.recordList.updateSorting(orderBy, sortOrder);
-                this.store.updateLocalStorage();
+                this.store.updateSortLocalStorage();
             },
         } as TableConfig;
     }
@@ -94,7 +95,8 @@ export class TableAdapter {
             this.message,
             this.confirmation,
             this.language,
-            this.selectModalService
+            this.selectModalService,
+            this.metadata
         );
     }
 

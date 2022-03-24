@@ -27,6 +27,7 @@
 import {RecordThreadItemStore} from '../../store/record-thread/record-thread-item.store';
 import {RecordThreadItemMetadata} from '../../store/record-thread/record-thread-item.store.model';
 import {ViewMode} from 'common';
+import {RecordThreadStore} from '../../store/record-thread/record-thread.store';
 
 
 export interface RecordThreadItemConfig {
@@ -36,6 +37,7 @@ export interface RecordThreadItemConfig {
     collapseLimit?: number;
     metadata: RecordThreadItemMetadata;
     store?: RecordThreadItemStore;
+    threadStore?: RecordThreadStore;
     initialMode?: ViewMode;
     buttonClass?: string;
     labelClass?: { [klass: string]: any };

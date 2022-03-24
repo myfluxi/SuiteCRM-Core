@@ -33,7 +33,9 @@
     </span>
 
     <ul [ngbCollapse]="subNavCollapse"
+        (click)="hideDropdown()"
         aria-labelledby="navbarDropdownMenuLink"
+        *ngIf="showDropdown"
         class="dropdown-menu main"
     >
         <li *ngFor="let sub of item.submenu" class="nav-item dropdown-submenu submenu">
@@ -49,7 +51,10 @@
             >
             </scrm-menu-item-link>
 
-            <ul *ngIf="sub.submenu.length" class="dropdown-menu submenu">
+            <ul *ngIf="sub.submenu.length"
+                [class.rounded-0]="sub.submenu && sub.submenu.length === 1"
+                class="dropdown-menu submenu"
+            >
 
                 <li *ngFor="let subitem of sub.submenu" class="nav-item">
 
@@ -58,10 +63,10 @@
                                          [link]="subitem.link">
                     </scrm-menu-item-link>
                 </li>
-                <li>
-                    <scrm-menu-recently-viewed [languages]="languages"
-                                               [records]="sub.recentRecords"></scrm-menu-recently-viewed>
-                </li>
+                <ng-container *ngIf="sub && sub.module">
+                    <scrm-sub-menu-recently-viewed [module]="sub.module"></scrm-sub-menu-recently-viewed>
+                    <scrm-sub-menu-favorites [module]="sub.module"></scrm-sub-menu-favorites>
+                </ng-container>
             </ul>
         </li>
     </ul>

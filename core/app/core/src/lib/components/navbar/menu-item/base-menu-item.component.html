@@ -38,8 +38,9 @@
         </scrm-menu-item-link>
 
     </span>
-    <div *ngIf="item.submenu.length"
+    <div (click)="hideDropdown()"
          aria-labelledby="navbarDropdownMenuLink"
+         *ngIf="item.submenu.length && showDropdown"
          class="dropdown-menu submenu">
 
         <div *ngFor="let sub of item.submenu" class="nav-item">
@@ -52,6 +53,9 @@
 
         </div>
 
-        <scrm-menu-recently-viewed [languages]="languages" [records]="item.recentRecords"></scrm-menu-recently-viewed>
+        <ng-container *ngIf="item && item.module">
+            <scrm-sub-menu-recently-viewed [module]="item.module"></scrm-sub-menu-recently-viewed>
+            <scrm-sub-menu-favorites [module]="item.module"></scrm-sub-menu-favorites>
+        </ng-container>
     </div>
 </ng-container>

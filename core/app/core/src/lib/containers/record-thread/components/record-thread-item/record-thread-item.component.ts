@@ -30,6 +30,8 @@ import {of, Subscription} from 'rxjs';
 import {FieldFlexbox, RecordFlexboxConfig} from '../../../../components/record-flexbox/record-flexbox.model';
 import {shareReplay} from 'rxjs/operators';
 import {ButtonInterface} from 'common';
+import {RecordThreadItemActionsAdapter} from '../../adapters/record-thread-item-actions.adapter';
+import {RecordThreadItemActionsAdapterFactory} from '../../adapters/record-thread-item-actions.adapter.factory';
 
 @Component({
     selector: 'scrm-record-thread-item',
@@ -45,8 +47,15 @@ export class RecordThreadItemComponent implements OnInit, OnDestroy, AfterViewIn
     collapseLimit = 300;
     dynamicClass = '';
     protected subs: Subscription[] = [];
+    protected actionAdapter: RecordThreadItemActionsAdapter;
+
+    constructor(
+        protected actionAdapterFactory: RecordThreadItemActionsAdapterFactory,
+    ) {
+    }
 
     ngOnInit(): void {
+        this.actionAdapter = this.actionAdapterFactory.create(this.config.store, this.config.threadStore);
         this.initDynamicClass();
     }
 
@@ -59,14 +68,16 @@ export class RecordThreadItemComponent implements OnInit, OnDestroy, AfterViewIn
             return;
         }
 
-        const collapseLimit = this.config.collapseLimit || this.collapseLimit;
+        setTimeout(() => {
+            const collapseLimit = this.config.collapseLimit || this.collapseLimit;
 
-        let height = this.bodyEl.nativeElement.offsetHeight;
+            let height = this.bodyEl.nativeElement.offsetHeight || this.bodyEl.nativeElement.height;
 
-        if (height > collapseLimit) {
-            this.collapsible = true;
-            this.collapsed = true;
-        }
+            if (height > collapseLimit) {
+                this.collapsible = true;
+                this.collapsed = true;
+            }
+        }, 2000);
     }
 
     /**
@@ -88,6 +99,7 @@ export class RecordThreadItemComponent implements OnInit, OnDestroy, AfterViewIn
             labelClass: this.config.labelClass || {},
             rowClass: this.config.rowClass || {},
             colClass: this.config.colClass || {},
+            actions: this.actionAdapter
         } as RecordFlexboxConfig;
     }
 
@@ -163,5 +175,12 @@ export class RecordThreadItemComponent implements OnInit, OnDestroy, AfterViewIn
             this.dynamicClass = klasses.join(' ');
 
         }))
+    }
+
+    /**
+     * Get body class
+     */
+    getBodyClass(): string {
+        return this.config?.metadata?.bodyLayout?.class ?? ''
     }
 }

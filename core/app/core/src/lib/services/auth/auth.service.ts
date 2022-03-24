@@ -29,14 +29,13 @@ import {Router} from '@angular/router';
 import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, Subscription, throwError} from 'rxjs';
 import {catchError, distinctUntilChanged, finalize, take} from 'rxjs/operators';
-import {User} from 'common';
+import {isEmptyString, User} from 'common';
 import {MessageService} from '../message/message.service';
 import {StateManager} from '../../store/state-manager';
 import {LanguageStore} from '../../store/language/language.store';
 import {BnNgIdleService} from 'bn-ng-idle';
 import {AppStateStore} from '../../store/app-state/app-state.store';
 import {LocalStorageService} from '../local-storage/local-storage.service';
-import {isEmptyString} from 'common';
 
 export interface SessionStatus {
     appStatus?: AppStatus;
@@ -75,6 +74,10 @@ export class AuthService {
         this.currentUser$ = this.currentUserSubject.asObservable().pipe(distinctUntilChanged());
     }
 
+    isLoggedIn(): boolean {
+        return this.isUserLoggedIn.value;
+    }
+
     getCurrentUser(): User {
         return this.currentUserSubject.value;
     }
@@ -104,6 +107,7 @@ export class AuthService {
             },
             {headers}
         ).subscribe((response: any) => {
+            this.appStateStore.updateInitialAppLoading(true);
             onSuccess(response);
             this.isUserLoggedIn.next(true);
             this.setCurrentUser(response);
@@ -138,7 +142,7 @@ export class AuthService {
      * @param {boolean} redirect to home
      */
     public logout(messageKey = 'LBL_LOGOUT_SUCCESS', redirect = true): void {
-        this.appStateStore.updateLoading('logout', true);
+        this.appStateStore.updateLoading('logout', true, false);
 
         const logoutUrl = 'logout';
         const body = new HttpParams();
@@ -155,7 +159,8 @@ export class AuthService {
                     return throwError(err);
                 }),
                 finalize(() => {
-                    this.appStateStore.updateLoading('logout', false);
+                    this.appStateStore.updateInitialAppLoading(true);
+                    this.appStateStore.updateLoading('logout', false, false);
                     if (redirect === true) {
                         this.router.navigate(['/Login']).finally();
                     }
@@ -170,13 +175,13 @@ export class AuthService {
                     }
 
                     this.message.log('Logout success');
-                    if(!isEmptyString(messageKey)) {
+                    if (!isEmptyString(messageKey)) {
                         this.message.addSuccessMessageByKey(messageKey);
                     }
                 },
                 () => {
                     this.message.log('Error on logout');
-                    if(!isEmptyString(messageKey)) {
+                    if (!isEmptyString(messageKey)) {
                         this.message.addSuccessMessageByKey(messageKey);
                     }
                 }

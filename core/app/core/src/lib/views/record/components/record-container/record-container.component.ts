@@ -24,39 +24,57 @@
  * the words "Supercharged by SuiteCRM".
  */
 
-import {Component, OnInit} from '@angular/core';
-import {combineLatest, Observable} from 'rxjs';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {combineLatest, Observable, Subscription} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {ViewContext, WidgetMetadata} from 'common';
 import {MetadataStore} from '../../../../store/metadata/metadata.store.service';
 import {LanguageStore, LanguageStrings} from '../../../../store/language/language.store';
-import {SubpanelContainerConfig} from '../../../../containers/subpanel/components/subpanel-container/subpanel-container.model';
+import {
+    SubpanelContainerConfig
+} from '../../../../containers/subpanel/components/subpanel-container/subpanel-container.model';
 import {SidebarWidgetAdapter} from '../../adapters/sidebar-widget.adapter';
 import {RecordViewStore} from '../../store/record-view/record-view.store';
 import {RecordContentAdapter} from '../../adapters/record-content.adapter';
 import {RecordContentDataSource} from '../../../../components/record-content/record-content.model';
 import {TopWidgetAdapter} from '../../adapters/top-widget.adapter';
+import {BottomWidgetAdapter} from '../../adapters/bottom-widget.adapter';
 
 @Component({
     selector: 'scrm-record-container',
     templateUrl: 'record-container.component.html',
-    providers: [RecordContentAdapter, TopWidgetAdapter, SidebarWidgetAdapter]
+    providers: [RecordContentAdapter, TopWidgetAdapter, SidebarWidgetAdapter, BottomWidgetAdapter]
 })
-export class RecordContainerComponent implements OnInit {
+export class RecordContainerComponent implements OnInit, OnDestroy {
+
+    loading: boolean = true;
     language$: Observable<LanguageStrings> = this.language.vm$;
 
     vm$ = combineLatest([
-        this.language$, this.sidebarWidgetAdapter.config$, this.topWidgetAdapter.config$, this.recordViewStore.showSubpanels$
+        this.language$,
+        this.sidebarWidgetAdapter.config$,
+        this.bottomWidgetAdapter.config$,
+        this.topWidgetAdapter.config$,
+        this.recordViewStore.showSubpanels$
     ]).pipe(
         map((
-            [language, sidebarWidgetConfig, topWidgetConfig, showSubpanels]
+            [
+                language,
+                sidebarWidgetConfig,
+                bottomWidgetConfig,
+                topWidgetConfig,
+                showSubpanels
+            ]
         ) => ({
             language,
             sidebarWidgetConfig,
+            bottomWidgetConfig,
             topWidgetConfig,
             showSubpanels
         }))
     );
+
+    protected subs: Subscription[] = [];
 
     constructor(
         public recordViewStore: RecordViewStore,
@@ -64,11 +82,19 @@ export class RecordContainerComponent implements OnInit {
         protected metadata: MetadataStore,
         protected contentAdapter: RecordContentAdapter,
         protected topWidgetAdapter: TopWidgetAdapter,
-        protected sidebarWidgetAdapter: SidebarWidgetAdapter
+        protected sidebarWidgetAdapter: SidebarWidgetAdapter,
+        protected bottomWidgetAdapter: BottomWidgetAdapter
     ) {
     }
 
     ngOnInit(): void {
+        this.subs.push(this.recordViewStore.loading$.subscribe(loading => {
+            this.loading = loading;
+        }))
+    }
+
+    ngOnDestroy() {
+        this.subs.forEach(sub => sub.unsubscribe());
     }
 
     getContentAdapter(): RecordContentDataSource {
@@ -77,6 +103,7 @@ export class RecordContainerComponent implements OnInit {
 
     getSubpanelsConfig(): SubpanelContainerConfig {
         return {
+            parentModule: this.recordViewStore.getModuleName(),
             subpanels$: this.recordViewStore.subpanels$,
             sidebarActive$: this.recordViewStore.widgets$
         } as SubpanelContainerConfig;

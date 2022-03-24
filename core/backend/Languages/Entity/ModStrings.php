@@ -26,7 +26,6 @@
  */
 
 
-
 namespace App\Languages\Entity;
 
 use ApiPlatform\Core\Annotation\ApiProperty;
@@ -99,5 +98,17 @@ class ModStrings
         $this->items = $items;
 
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->getId(),
+            '_id' => $this->getId(),
+            'items' => $this->getItems() ?? []
+        ];
     }
 }

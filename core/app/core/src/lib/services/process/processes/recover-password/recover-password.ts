@@ -53,14 +53,14 @@ export class RecoverPasswordService {
             useremail: email
         };
 
-        this.appStateStore.updateLoading('recover-password', true);
+        this.appStateStore.updateLoading('recover-password', true, false);
 
         return this.processService
             .submit(this.processType, options)
             .pipe(
-                tap(() => this.appStateStore.updateLoading('recover-password',false)),
+                tap(() => this.appStateStore.updateLoading('recover-password', false, false)),
                 catchError(err => {
-                    this.appStateStore.updateLoading('recover-password',false);
+                    this.appStateStore.updateLoading('recover-password', false, false);
                     throw err;
                 }),
             );

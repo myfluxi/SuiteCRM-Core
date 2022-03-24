@@ -26,7 +26,6 @@
 
 import {Component, Input} from '@angular/core';
 import {MenuItem} from 'common';
-import {LanguageStrings} from '../../../store/language/language.store';
 
 @Component({
     selector: 'scrm-base-grouped-menu-item',
@@ -35,9 +34,14 @@ import {LanguageStrings} from '../../../store/language/language.store';
 })
 export class BaseGroupedMenuItemComponent {
     @Input() item: MenuItem;
-    @Input() languages: LanguageStrings;
     @Input() subNavCollapse: boolean;
+    showDropdown: boolean = true;
 
     constructor() {
+    }
+
+    hideDropdown() {
+        this.showDropdown = false;
+        setTimeout(() => this.showDropdown = true, 0)
     }
 }

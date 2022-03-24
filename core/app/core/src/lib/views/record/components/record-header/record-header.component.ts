@@ -30,7 +30,7 @@ import {Subscription} from 'rxjs';
 import {RecordViewStore} from '../../store/record-view/record-view.store';
 import {ModuleNavigation} from '../../../../services/navigation/module-navigation/module-navigation.service';
 import {RecordActionsAdapter} from '../../adapters/actions.adapter';
-import {ActionContext, Record} from 'common';
+import {ActionContext, Record, ViewMode} from 'common';
 
 @Component({
     selector: 'scrm-record-header',
@@ -41,6 +41,8 @@ export class RecordHeaderComponent implements OnInit, OnDestroy {
 
     record: Record;
     displayResponsiveTable = false;
+    mode: ViewMode = 'detail';
+    loading: boolean = true;
 
     protected subs: Subscription[] = [];
 
@@ -52,9 +54,17 @@ export class RecordHeaderComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.mode = this.recordViewStore.getMode();
+        this.subs.push(this.recordViewStore.mode$.subscribe(mode => {
+            this.mode = mode;
+        }));
         this.subs.push(this.recordViewStore.record$.subscribe(record => {
             this.record = record;
         }));
+
+        this.subs.push(this.recordViewStore.loading$.subscribe(loading => {
+            this.loading = loading;
+        }))
     }
 
     ngOnDestroy(): void {

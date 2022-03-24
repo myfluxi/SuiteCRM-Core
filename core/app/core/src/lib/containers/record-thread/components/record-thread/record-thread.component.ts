@@ -32,7 +32,7 @@ import {RecordThreadConfig} from './record-thread.model';
 import {take} from 'rxjs/operators';
 import {RecordThreadItemConfig} from '../record-thread-item/record-thread-item.model';
 import {RecordThreadItemStore} from '../../store/record-thread/record-thread-item.store';
-import {AttributeMap, ButtonInterface, Record, ViewMode} from 'common';
+import {AttributeMap, ButtonInterface, isVoid, Record, ViewMode} from 'common';
 import {RecordThreadItemStoreFactory} from '../../store/record-thread/record-thread-item.store.factory';
 import {RecordManager} from '../../../../services/record/record.manager';
 import {MessageService} from '../../../../services/message/message.service';
@@ -69,7 +69,9 @@ export class RecordThreadComponent implements OnInit, OnDestroy, AfterViewInit {
 
     ngOnInit(): void {
 
-        this.maxHeight = this.config.maxListHeight || this.maxHeight;
+        if (!isVoid(this.config.maxListHeight)) {
+            this.maxHeight = this.config.maxListHeight;
+        }
 
         if (!this.config.store) {
             this.store = this.storeFactory.create();
@@ -112,10 +114,17 @@ export class RecordThreadComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     buildItem(item: RecordThreadItemStore, itemRef: any): RecordThreadItemConfig {
+        let klass = 'record-thread-list-item';
+
+        if (this.config.itemConfig.klass) {
+            klass += ' ' + this.config.itemConfig.klass
+        }
+
         return {
             ...this.config.itemConfig,
             store: item,
-            klass: 'record-thread-list-item',
+            threadStore: this.store,
+            klass: klass,
             expanded: (): void => {
                 this.scrollToItem(itemRef);
             },
@@ -170,6 +179,14 @@ export class RecordThreadComponent implements OnInit, OnDestroy, AfterViewInit {
 
     allLoaded(): boolean {
         return !!(this.store && this.store.allLoaded());
+    }
+
+    getMaxHeight(): { [klass: string]: any; } | null {
+        if (this.maxHeight == 0) {
+            return null;
+        }
+
+        return {'max-height.px': this.maxHeight, 'overflow-y': 'auto'}
     }
 
     protected initRecord() {

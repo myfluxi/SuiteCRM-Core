@@ -45,6 +45,15 @@ interface WidgetDefinitionProviderInterface
     public function getSidebarWidgets(array $config, string $module, array $moduleDefaults = []): array;
 
     /**
+     * Get list of bottom widgets for module.
+     * @param array $config
+     * @param string $module
+     * @param array $moduleDefaults
+     * @return array
+     */
+    public function getBottomWidgets(array $config, string $module, array $moduleDefaults = []): array;
+
+    /**
      * Get list of top widgets for module
      * @param array $config
      * @param string $module

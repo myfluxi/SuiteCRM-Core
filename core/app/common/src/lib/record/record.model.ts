@@ -35,6 +35,7 @@ export interface Record {
     id?: string;
     type?: string;
     module: string;
+    favorite?: boolean;
     attributes: AttributeMap;
     acls?: string[];
     fields?: FieldMap;

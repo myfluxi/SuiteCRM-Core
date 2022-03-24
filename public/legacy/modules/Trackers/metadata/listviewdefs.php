@@ -38,20 +38,29 @@
  * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
-
-class HomeViewModulelistmenu extends ViewModulelistmenu
-{
-    public function display()
-    {
-        $tracker = BeanFactory::newBean('Trackers');
-        $history = $tracker->get_recently_viewed($GLOBALS['current_user']->id);
-
-        foreach ($history as $key => $row) {
-            $history[$key]['item_summary_short'] = getTrackerSubstring($row['item_summary']);
-            $history[$key]['image'] = SugarThemeRegistry::current()->getImage($row['module_name'], 'border="0" align="absmiddle"', null, null, '.gif', $row['item_summary']);
-        }
-        $this->ss->assign('LAST_VIEWED', $history);
-        
-        $this->ss->display('include/MVC/View/tpls/modulelistmenu.tpl');
-    }
+if (!defined('sugarEntry') || !sugarEntry) {
+    die('Not A Valid Entry Point');
 }
+
+$listViewDefs['Trackers'] = [
+    'module_name' => [
+        'label' => 'LBL_MODULE_NAME',
+        'sortable' => false,
+        'default' => true,
+    ],
+    'item_id' => [
+        'label' => 'LBL_ITEM_ID',
+        'sortable' => false,
+        'default' => true,
+    ],
+    'item_summary' => [
+        'label' => 'LBL_ITEM_SUMMARY',
+        'sortable' => false,
+        'default' => true,
+    ],
+    'date_modified' => [
+        'label' => 'LBL_DATE_LAST_ACTION',
+        'sortable' => false,
+        'default' => true,
+    ],
+];

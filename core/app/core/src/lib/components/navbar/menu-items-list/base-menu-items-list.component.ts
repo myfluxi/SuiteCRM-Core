@@ -34,8 +34,14 @@ import {MenuItem} from 'common';
 })
 export class BaseMenuItemsListComponent {
     @Input() items: MenuItem[];
-    @Input() label: string;
+    @Input() labelKey: string;
+    showDropdown: boolean = true;
 
     constructor() {
+    }
+
+    hideDropdown() {
+        this.showDropdown = false;
+        setTimeout(() => this.showDropdown = true, 0)
     }
 }

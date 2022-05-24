@@ -46,6 +46,7 @@ class LegacySessionLogoutListener
         if ($event->getRequest()->hasSession() && $event->getRequest()->getSession()->remove('loginInProcess')) {
             $event->getRequest()->getSession()->invalidate();
             $this->authentication->logout();
+            $this->authentication->initNewLegacySession();
         }
     }
 }

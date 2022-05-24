@@ -39,6 +39,7 @@ require_once __DIR__ . '/TypeMappers/BooleanMapper.php';
 require_once __DIR__ . '/ApiBeanModuleMappers.php';
 require_once __DIR__ . '/ModuleMappers/SavedSearch/SavedSearchMappers.php';
 require_once __DIR__ . '/ModuleMappers/AOP_Case_Updates/CaseUpdatesMappers.php';
+require_once __DIR__ . '/../Bean/Field/Validation/FieldValidatorRegistry.php';
 
 class ApiBeanMapper
 {
@@ -95,6 +96,8 @@ class ApiBeanMapper
         $arr['module_name'] = $bean->module_name ?? '';
         $arr['object_name'] = $bean->object_name ?? '';
 
+        [$linkFields, $idFields] = $this->getLinkFields($bean);
+
         foreach ($bean->field_defs as $field => $definition) {
             if ($this->isSensitiveField($definition)) {
                 continue;
@@ -104,7 +107,7 @@ class ApiBeanMapper
                 continue;
             }
 
-            if ($this->isLinkField($definition)) {
+            if (!$this->isIdField($idFields, $field) && $this->isLinkField($definition)) {
                 if (!$this->hasLinkMapper($bean->module_name, $definition)) {
                     continue;
                 }
@@ -114,8 +117,17 @@ class ApiBeanMapper
                 continue;
             }
 
+            if ($this->isIdField($idFields, $field) && $this->isLinkField($definition)) {
+                $this->setValue($bean, $field, $arr, $definition);
+                continue;
+            }
+
             if ($this->isRelateField($definition)) {
                 $this->addRelateFieldToArray($bean, $definition, $arr, $field);
+                continue;
+            }
+
+            if ($this->isLinkField($definition)) {
                 continue;
             }
 
@@ -136,6 +148,8 @@ class ApiBeanMapper
 
         $bean->field_defs = $this->mapLinkedModule($bean);
 
+        [$linkFields, $idFields] = $this->getLinkFields($bean);
+
         foreach ($bean->field_defs as $field => $properties) {
             if (!isset($values[$field])) {
                 continue;
@@ -143,13 +157,16 @@ class ApiBeanMapper
 
             $this->toBeanMap($bean, $values, $properties, $field);
 
-            if ($this->isLinkField($properties)) {
+            if (!$this->isIdField($idFields, $field) && $this->isLinkField($properties)) {
                 if (!$this->hasLinkMapper($bean->module_name, $properties)) {
                     continue;
                 }
 
                 $this->mapLinkFieldToBean($bean, $values, $properties);
+                continue;
             }
+
+            $this->validate($bean->module_name, $field, $properties, $values[$field] ?? null, $idFields);
 
             $bean->$field = $values[$field];
         }
@@ -319,12 +336,11 @@ class ApiBeanMapper
      */
     protected function setValue(
         SugarBean $bean,
-                  $field,
-        array     &$arr,
-        array     $definition,
-        string    $alternativeName = ''
-    ): void
-    {
+        $field,
+        array &$arr,
+        array $definition,
+        string $alternativeName = ''
+    ): void {
         $name = $field;
 
         if (!empty($alternativeName)) {
@@ -604,4 +620,109 @@ class ApiBeanMapper
         }
     }
 
+    /**
+     * Get link field information
+     * @param SugarBean $bean
+     * @return array
+     */
+    protected function getLinkFields(SugarBean $bean): array
+    {
+        $linkFields = [];
+        $idFields = [];
+
+        foreach ($bean->field_defs as $field => $definition) {
+
+            $link = $definition['link'] ?? '';
+            $idField = $definition['id_name'] ?? '';
+
+            if (!empty($link)) {
+                $linkInfo = $linkFields[$link] ?? [];
+                $linkInfo['link'] = $link;
+
+                if (!empty($idField)) {
+                    $idFieldInfo = $idFields[$idField] ?? [];
+                    $idFieldInfo['name'] = $idField;
+                    $idFieldInfo['link'] = $link;
+                    $idFields[$idField] = $idFieldInfo;
+
+                    $linkInfo['id'] = $idField;
+                }
+
+                $linkFields[$link] = $linkInfo;
+            }
+        }
+
+        $idFields = $this->addIdFieldsFromLinks($bean, $linkFields, $idFields);
+
+        return [$linkFields, $idFields];
+    }
+
+    /**
+     * Add ids from link fields
+     * @param SugarBean $bean
+     * @param array $linkFields
+     * @return array
+     */
+    protected function addIdFieldsFromLinks(SugarBean $bean, array $linkFields, array $idFields): array
+    {
+        foreach ($bean->field_defs as $field => $definition) {
+
+            $relationship = $definition['relationship'] ?? '';
+
+            if (empty($relationship)) {
+                continue;
+            }
+
+            if (!empty($linkFields[$field]) && $this->isLinkField($definition)) {
+                $idName = $linkFields[$field]['id'] ?? '';
+
+                $idField = $idFields[$idName] ?? [];
+                $idField['relationship'] = $relationship;
+                $idFields[$idName] = $idField;
+            }
+        }
+
+        return $idFields;
+    }
+
+    /**
+     * @param $idFields
+     * @param $field
+     * @return bool
+     */
+    protected function isIdField($idFields, $field): bool
+    {
+        return isset($idFields[$field]);
+    }
+
+    /**
+     * Validate field
+     * @param string $module
+     * @param string $field
+     * @param array $definition
+     * @param mixed $value
+     * @param array $idFields
+     * @return void
+     */
+    private function validate(string $module, string $field, array $definition, $value, array $idFields): void
+    {
+        $type = $definition['type'];
+
+        if ($this->isIdField($idFields, $field)) {
+            $type = 'id';
+        }
+
+        if ($field === 'id') {
+            $type = 'id';
+        }
+
+        $registry = FieldValidatorRegistry::getInstance();
+
+        $errors = $registry->validate($field, $type, $definition, $value, $module);
+
+        if (!empty($errors)) {
+            $registry->logErrors($errors, 'ApiBeanMapper field validation');
+            throw new InvalidArgumentException("Invalid $field field value ");
+        }
+    }
 }

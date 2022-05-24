@@ -27,12 +27,15 @@
 import {Injectable} from '@angular/core';
 
 import {BehaviorSubject, combineLatest, forkJoin, Observable, of} from 'rxjs';
-import {distinctUntilChanged, first, map, shareReplay, tap} from 'rxjs/operators';
+import {distinctUntilChanged, first, map, shareReplay, take, tap} from 'rxjs/operators';
 import {EntityGQL} from '../../services/api/graphql-api/api.entity.get';
 import {AppStateStore} from '../app-state/app-state.store';
-import {deepClone, emptyObject} from 'common';
+import {deepClone, emptyObject, StringMap} from 'common';
 import {StateStore} from '../state';
 import {LocalStorageService} from '../../services/local-storage/local-storage.service';
+import {Process, ProcessService} from '../../services/process/process.service';
+import {SystemConfigStore} from '../system-config/system-config.store';
+import {isString} from 'lodash-es';
 
 export interface LanguageStringMap {
     [key: string]: string;
@@ -148,7 +151,9 @@ export class LanguageStore implements StateStore {
     constructor(
         protected recordGQL: EntityGQL,
         protected appStateStore: AppStateStore,
-        protected localStorage: LocalStorageService
+        protected localStorage: LocalStorageService,
+        protected processService: ProcessService,
+        protected configs: SystemConfigStore
     ) {
 
         this.appStrings$ = this.state$.pipe(map(state => state.appStrings), distinctUntilChanged());
@@ -205,8 +210,9 @@ export class LanguageStore implements StateStore {
      * Update the language strings toe the given language
      *
      * @param {string} languageKey language key
+     * @param {boolean} reload
      */
-    public changeLanguage(languageKey: string): void {
+    public changeLanguage(languageKey: string, reload = false): void {
         const types = [];
 
         Object.keys(loadedLanguages).forEach(type => loadedLanguages[type] && types.push(type));
@@ -215,9 +221,9 @@ export class LanguageStore implements StateStore {
 
         this.appStateStore.updateLoading('change-language', true);
 
-        this.load(languageKey, types).pipe(
+        this.load(languageKey, types, reload).pipe(
             tap(() => {
-                this.localStorage.set('selected_language', languageKey);
+                this.localStorage.set('selected_language', languageKey, true);
                 this.appStateStore.updateLoading('change-language', false);
             })
         ).subscribe();
@@ -369,7 +375,82 @@ export class LanguageStore implements StateStore {
             return storedLanguage;
         }
 
-        return internalState.languageKey;
+        return internalState.languageKey ?? 'en_us';
+    }
+
+    /**
+     * Returns the active language
+     *
+     * @returns {string} active language key
+     */
+    public getActiveLanguage(): string {
+
+        return internalState.languageKey ?? '';
+    }
+
+    /**
+     * Returns the selected language
+     *
+     * @returns {string} selected language key
+     */
+    public getSelectedLanguage(): string {
+        return this.localStorage.get('selected_language') ?? '';
+    }
+
+    /**
+     * Check if language is enabled
+     * @param currentLanguage
+     */
+    public isLanguageEnabled(currentLanguage: string): boolean {
+        if (!currentLanguage) {
+            return false;
+        }
+        const languages = this.configs.getConfigValue('languages') ?? {};
+        const disabled = this.getDisabledLanguages();
+        const languageKeys = Object.keys(languages);
+
+        if (!languageKeys.length) {
+            return false;
+        }
+
+        return languageKeys.includes(currentLanguage) && !disabled.includes(currentLanguage);
+    }
+
+    /**
+     * Get disabled languages
+     */
+    public getDisabledLanguages(): string[] {
+        const disabledConfig = this.configs.getConfigValue('disabled_languages') ?? '';
+        if (!isString(disabledConfig) || disabledConfig === '') {
+            return [];
+        }
+        return disabledConfig.replace(' ', '').split(',');
+    }
+
+    /**
+     * Get enabled languages
+     */
+    public getEnabledLanguages(): StringMap {
+        const languages = this.configs.getConfigValue('languages') ?? {};
+        const disabled = this.getDisabledLanguages();
+
+        const enabled = {};
+        const enabledKeys = Object.keys(languages).filter(value => !disabled.includes(value));
+        enabledKeys.forEach(key => {
+            enabled[key] = languages[key];
+        });
+
+        return enabled;
+    }
+
+    /**
+     * Get fist language in list
+     * @private
+     */
+    public getFirstLanguage(): string {
+        const languages = this.configs.getConfigValue('languages') ?? {};
+        const languageKeys = Object.keys(languages);
+        return languageKeys.sort()[0] ?? '';
     }
 
 
@@ -379,13 +460,14 @@ export class LanguageStore implements StateStore {
      *
      * @param {string} languageKey to load
      * @param {string[]} types to load
-     * @returns {{}} Observable
+     * @param {boolean} reload
+     * @returns {object} Observable
      */
-    public load(languageKey: string, types: string[]): Observable<any> {
+    public load(languageKey: string, types: string[], reload = false): Observable<any> {
 
         const streams$ = {};
 
-        types.forEach(type => streams$[type] = this.getStrings(languageKey, type));
+        types.forEach(type => streams$[type] = this.getStrings(languageKey, type, reload));
 
         return forkJoin(streams$).pipe(
             first(),
@@ -442,6 +524,20 @@ export class LanguageStore implements StateStore {
         this.updateState(stateUpdate);
     }
 
+    /**
+     * Set session language
+     */
+    public setSessionLanguage(): Observable<Process> {
+
+        const processType = 'set-session-language';
+
+        const options = {
+            language: internalState.languageKey
+        };
+
+        return this.processService.submit(processType, options).pipe(take(1));
+    }
+
 
     /**
      * Internal API
@@ -462,14 +558,15 @@ export class LanguageStore implements StateStore {
      *
      * @param {string} language to load
      * @param {string} type load
-     * @returns {{}} Observable<any>
+     * @param {boolean} reload
+     * @returns {object} Observable<any>
      */
-    protected getStrings(language: string, type: string): Observable<{}> {
+    protected getStrings(language: string, type: string, reload = false): Observable<{}> {
 
         const stringsCache = cache[type];
         const fetchMethod = this.config[type].fetch;
 
-        if (stringsCache[language]) {
+        if (stringsCache[language] && reload === false) {
             return stringsCache[language];
         }
 

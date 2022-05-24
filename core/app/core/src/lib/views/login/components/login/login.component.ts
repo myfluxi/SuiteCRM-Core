@@ -24,10 +24,10 @@
  * the words "Supercharged by SuiteCRM".
  */
 
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
-import {combineLatest, Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {combineLatest, Observable, of} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
 import {transition, trigger, useAnimation} from '@angular/animations';
 import {fadeIn} from 'ng-animate';
 import {RecoverPasswordService} from '../../../../services/process/processes/recover-password/recover-password';
@@ -36,6 +36,7 @@ import {AuthService} from '../../../../services/auth/auth.service';
 import {LanguageStore, LanguageStringMap} from '../../../../store/language/language.store';
 import {MessageService} from '../../../../services/message/message.service';
 import {Process} from '../../../../services/process/process.service';
+import {StringMap} from 'common';
 
 
 @Component({
@@ -50,7 +51,7 @@ import {Process} from '../../../../services/process/process.service';
         ])
     ]
 })
-export class LoginUiComponent {
+export class LoginUiComponent implements OnInit {
     hidden = true;
     loading = false;
     error = '';
@@ -60,8 +61,10 @@ export class LoginUiComponent {
 
     cardState = 'front';
 
-    systemConfigs$: Observable<SystemConfigMap> = this.systemConfigStore.configs$;
+    systemConfigs$: Observable<SystemConfigMap> = this.configs.configs$;
     appStrings$: Observable<LanguageStringMap> = this.languageStore.appStrings$;
+
+    language: string = null;
 
     vm$ = combineLatest([this.systemConfigs$, this.appStrings$]).pipe(
         map(([systemConfigs, appStrings]) => {
@@ -77,7 +80,6 @@ export class LoginUiComponent {
                 showForgotPassword = [true, '1', 'true'].includes(forgotPasswordProperty);
             }
 
-
             return {
                 systemConfigs,
                 appStrings,
@@ -91,20 +93,41 @@ export class LoginUiComponent {
         protected router: Router,
         protected auth: AuthService,
         protected message: MessageService,
-        protected systemConfigStore: SystemConfigStore,
+        protected configs: SystemConfigStore,
         protected languageStore: LanguageStore,
         protected recoverPasswordService: RecoverPasswordService
     ) {
         this.loading = false;
         this.hidden = false;
+        this.language = null;
     }
 
-    doLanguageChange(language: string): void {
-        this.languageStore.changeLanguage(language);
+    ngOnInit() {
+        this.setCurrentLanguage();
     }
 
-    doGetCurrentLanguage(): string {
-        return this.languageStore.getCurrentLanguage();
+    onLanguageSelect(language: string): void {
+        if (!language) {
+            return;
+        }
+
+        if (language === this.language) {
+            return;
+        }
+        this.changeLanguage(language);
+    }
+
+    changeLanguage(language: string): void {
+        this.language = language;
+        this.languageStore.changeLanguage(language, true);
+    }
+
+    getEnabledLanguages(): StringMap {
+        return this.languageStore.getEnabledLanguages();
+    }
+
+    getEnabledLanguagesKeys(): string[] {
+        return Object.keys(this.languageStore.getEnabledLanguages() ?? {}) ?? [];
     }
 
     flipCard(): void {
@@ -150,12 +173,16 @@ export class LoginUiComponent {
         this.message.log('Login success');
         this.message.removeMessages();
 
-        if (result && result.redirect) {
-            this.router.navigate([result.redirect]).then();
-        } else {
-            const defaultModule = this.systemConfigStore.getHomePage();
-            this.router.navigate(['/' + defaultModule]).then();
-        }
+        this.languageStore.setSessionLanguage()
+            .pipe(catchError(() => of({})))
+            .subscribe(() => {
+                if (result && result.redirect) {
+                    this.router.navigate([result.redirect]).then();
+                } else {
+                    const defaultModule = this.configs.getHomePage();
+                    this.router.navigate(['/' + defaultModule]).then();
+                }
+            });
 
         return;
     }
@@ -164,5 +191,35 @@ export class LoginUiComponent {
         this.loading = false;
         this.message.log('Login failed');
         this.message.addDangerMessage('Login credentials incorrect, please try again.');
+    }
+
+    protected setCurrentLanguage(): void {
+        let currentLanguage = this.languageStore.getSelectedLanguage() ?? '';
+        const activeLanguage = this.languageStore.getActiveLanguage();
+
+        if (!currentLanguage) {
+            currentLanguage = activeLanguage;
+        }
+
+        if (!this.languageStore.isLanguageEnabled(currentLanguage)) {
+            currentLanguage = '';
+        }
+
+        if (this.language && currentLanguage === this.language) {
+            return;
+        }
+
+        const defaultLanguage = this.configs.getConfigValue('default_language') ?? 'en_us';
+
+        if (!currentLanguage) {
+            currentLanguage = defaultLanguage;
+        }
+
+        if (!this.languageStore.isLanguageEnabled(currentLanguage)) {
+            currentLanguage = this.languageStore.getFirstLanguage();
+        }
+
+        this.language = currentLanguage;
+        this.changeLanguage(currentLanguage);
     }
 }

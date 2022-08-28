@@ -142,11 +142,11 @@ class FavoritesManagerPort
 
         $query = "SELECT favorites.*
                   FROM favorites
-                  JOIN " . $bean->table_name . " ON ( " . $bean->table_name . ".id = favorites.parent_id )
+                  JOIN " . $bean->table_name . " ON ( '" . $bean->table_name . ".id' = favorites.parent_id )
                   WHERE favorites.assigned_user_id = '" . $db->quote($userId) . "'
                     AND favorites.parent_type = '" . $db->quote($module) . "'
                     AND favorites.deleted = 0
-                    AND " . $bean->table_name . ".deleted = 0
+                    AND '" . $bean->table_name . ".deleted' = 0
                   ORDER BY favorites.date_entered DESC";
 
         $result = $db->limitQuery($query, 0, 10);
